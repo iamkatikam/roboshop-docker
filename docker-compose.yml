@@ -1,71 +1,84 @@
----
-  networks:
-    default:
-      driver: bridge
-      name: roboshop
-      #external: true
-  services:
-    mongodb:
-      image: iamrams/mongodb:v1
-      container_name: mongodb
-    catalogue:
-      image: iamrams/catalogue:v1
-      container_name: catalogue
-      depends_on:
-        - mongodb
-    redis:
-      image: redis:7.0
-      container_name: redis
-    user:
-      image: iamrams/user:v1
-      container_name: user
-      depends_on:
-        - redis
-        - mongodb
-    cart:
-      image: iamrams/cart:v1
-      container_name: cart
-      depends_on:
-        - catalogue
-        - redis
-    mysql:
-      image: iamrams/mysql:v1
-      container_name: mysql
-    shipping:
-      image: iamrams/shipping:v1
-      container_name: shipping
-      depends_on:
-        - mysql
-        - cart
-    rabbitmq:
-      image: rabbitmq:3
-      container_name: rabbitmq
-      environment:
-        RABBITMQ_DEFAULT_USER: roboshop
-        RABBITMQ_DEFAULT_PASS: roboshop123
-    payment:
-      image: iamrams/payment:v1
-      container_name: payment
-      environment: 
-        CART_HOST: cart
-        CART_PORT: 8080
-        USER_HOST: user
-        USER_PORT: 8080
-        AMQP_HOST: rabbitmq
-        AMPQ_USER: roboshop
-        AMPQ_PASS: roboshop123
-      depends_on:
-      - rabbitmq
-      - cart
-      - user
-    frontend:
-      image: iamrams/frontend:v1
-      container_name: frontend
-      ports:
-      - "80:80"
-      depends_on:
-      - catalogue
-      - user
-      - cart
-      - shipping
-      - payment
+networks:
+  default:
+    driver: bridge
+    name: roboshop
+    #external: true #I created network already using docker network create roboshop
+volumes:
+  mongodb:
+  redis:
+  mysql:
+  rabbitmq: # docker volume create rabbitmq
+services:
+  mongodb:
+    image: iamrams/mongodb:v1
+    container_name: mongodb
+    volumes:
+    - mongodb:/data/db
+  catalogue:
+    image: iamrams/catalogue:v1
+    container_name: catalogue
+    depends_on:
+    - mongodb
+  redis:
+    image: redis:7.0
+    container_name: redis
+    volumes:
+    - redis:/data
+  user:
+    image: iamrams/user:v1
+    container_name: user
+    depends_on:
+    - redis
+    - mongodb
+  cart:
+    image: iamrams/cart:v1
+    container_name: cart
+    depends_on:
+    - catalogue
+    - redis
+  mysql:
+    image: iamrams/mysql:v1
+    container_name: mysql
+    volumes:
+    - mysql:/var/lib/mysql
+  shipping:
+    image: iamrams/shipping:v1
+    container_name: shipping
+    depends_on:
+    - mysql
+    - cart
+  rabbitmq:
+    image: rabbitmq:3
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: roboshop
+      RABBITMQ_DEFAULT_PASS: roboshop123
+    volumes:
+    - rabbitmq:/var/lib/rabbitmq
+  payment:
+    image: iamrams/payment:v1
+    container_name: payment
+    environment:
+      CART_HOST: cart
+      CART_PORT: 8080
+      USER_HOST: user
+      USER_PORT: 8080
+      AMQP_HOST: rabbitmq
+      AMQP_USER: roboshop
+      AMQP_PASS: roboshop123
+    depends_on:
+    - rabbitmq
+    - cart
+    - user
+  frontend:
+    image: iamrams/frontend:v1
+    container_name: frontend
+    ports:
+    - "80:80"
+    depends_on:
+    - catalogue
+    - user
+    - cart
+    - shipping
+    - payment
+      
